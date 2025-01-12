@@ -26,14 +26,14 @@ const (
 
 var (
 	httpListen  *string
-  contentDir *string
+	contentDir  *string
 	openBrowser *bool
 	httpAddr    string
 )
 
 func Main() {
 	httpListen = flag.String("http", "127.0.0.1:3999", "host:port to listen on")
-	contentDir = flag.String("content", "_content", "content folder to serve")
+	contentDir = flag.String("content", "", "content folder to serve")
 	openBrowser = flag.Bool("openbrowser", true, "open browser automatically")
 
 	flag.Parse()

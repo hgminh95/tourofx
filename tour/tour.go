@@ -7,21 +7,21 @@ package tour
 import (
 	"bytes"
 	"crypto/sha1"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
-  "os"
 	"io/fs"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"golang.org/x/tools/present"
-	"golang.org/x/website"
 )
 
 var (
@@ -30,11 +30,22 @@ var (
 	lessonNotFound = fmt.Errorf("lesson not found")
 )
 
-var contentTour = website.TourOnly()
+//go:embed _content/favicon.ico
+//go:embed _content/images/go-logo-white.svg
+//go:embed _content/images/icons
+//go:embed _content/js/playground.js
+//go:embed _content/tour
+var tourOnly embed.FS
+
+var contentTour fs.FS
 
 // initTour loads tour.article and the relevant HTML templates from root.
 func initTour(mux *http.ServeMux, transport string, contentDir string) error {
-  contentTour = os.DirFS(contentDir)
+	if contentDir != "" {
+		contentTour = os.DirFS(contentDir)
+	} else {
+		contentTour = subdir(tourOnly, "_content")
+	}
 
 	// Make sure playground is enabled before rendering.
 	present.PlayEnabled = true
@@ -233,6 +244,7 @@ func initScript(mux *http.ServeMux, socketAddr, transport string) error {
 	modTime := time.Now()
 	b := new(bytes.Buffer)
 
+	// MODIFYME: CodeMirror mode js file. The version is 5.25.2 based on commit history
 	// Keep this list in dependency order
 	files := []string{
 		"../js/playground.js",
@@ -241,6 +253,7 @@ func initScript(mux *http.ServeMux, socketAddr, transport string) error {
 		"static/lib/angular.min.js",
 		"static/lib/codemirror/lib/codemirror.js",
 		"static/lib/codemirror/mode/go/go.js",
+		"static/lib/codemirror/mode/python/python.js",
 		"static/lib/angular-ui.min.js",
 		"static/js/app.js",
 		"static/js/controllers.js",
@@ -274,4 +287,12 @@ func initScript(mux *http.ServeMux, socketAddr, transport string) error {
 	})
 
 	return nil
+}
+
+func subdir(fsys fs.FS, path string) fs.FS {
+	s, err := fs.Sub(fsys, path)
+	if err != nil {
+		panic(err)
+	}
+	return s
 }
